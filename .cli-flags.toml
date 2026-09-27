@@ -12,6 +12,9 @@ ignore = ["POEX_DESKTOP_TOKEN"]
 [commands.status]
 help = "Show local Pony Expres daemon status."
 
+[commands.doctor]
+help = "Show local daemon diagnostics and invocation counters."
+
 [commands.invoke]
 help = "Invoke a local Pony deployment through poex-desktop-daemon."
 
@@ -41,7 +44,7 @@ aliases = ["url"]
 short = "u"
 type = "string"
 default = "http://127.0.0.1:8762"
-help = "Loopback URL of poex-desktop-daemon."
+help = "Credential-free numeric-loopback URL of poex-desktop-daemon."
 
 [flags.timeout]
 env = "POEX_DESKTOP_TIMEOUT_MS"
@@ -50,3 +53,9 @@ short = "t"
 type = "integer"
 default = 30000
 help = "Invocation timeout in milliseconds."
+
+[flags.token-file]
+env = "POEX_DESKTOP_TOKEN_FILE"
+aliases = ["token-file"]
+type = "string"
+help = "Path to the local daemon bearer-token file; defaults to ~/.pony-expres/daemon/token."
