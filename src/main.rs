@@ -22,6 +22,7 @@ struct CliConfig {
     POEX_DESKTOP_TENANT_ID: Option<String>,
     POEX_DESKTOP_DEPLOYMENT_ID: Option<String>,
     POEX_DESKTOP_PAYLOAD: Option<Value>,
+    POEX_DESKTOP_TOKEN_FILE: Option<String>,
     FLAGS2ENV_COMMAND: Option<String>,
 }
 
@@ -72,7 +73,8 @@ async fn run() -> Result<()> {
         .ok()
         .filter(|value| *value > 0 && *value <= 1_200_000)
         .ok_or_else(|| anyhow!("--timeout must be between 1 and 1200000 ms"))?;
-    let token = read_token()?;
+    let token_path = resolve_token_path(config.POEX_DESKTOP_TOKEN_FILE.as_deref())?;
+    let token = read_token_file(&token_path)?;
     let base = validate_daemon_origin(&config.POEX_DESKTOP_DAEMON_URL)?;
     let client = reqwest::Client::builder()
         .redirect(reqwest::redirect::Policy::none())
@@ -83,6 +85,14 @@ async fn run() -> Result<()> {
         "status" => {
             let response = client
                 .get(format!("{base}/v1/status"))
+                .bearer_auth(&token)
+                .send()
+                .await?;
+            print_response(response).await?;
+        }
+        "doctor" => {
+            let response = client
+                .get(format!("{base}/v1/doctor"))
                 .bearer_auth(&token)
                 .send()
                 .await?;
@@ -110,7 +120,7 @@ async fn run() -> Result<()> {
             print_response(response).await?;
         }
         _ => {
-            bail!("command required: status or invoke");
+            bail!("command required: status, doctor, or invoke");
         }
     }
 
@@ -215,13 +225,20 @@ fn resolve_config_path() -> Result<PathBuf> {
     bail!("cannot locate .cli-flags.toml");
 }
 
-fn read_token() -> Result<String> {
-    let path = if let Some(path) = env::var_os("POEX_DESKTOP_TOKEN_FILE") {
-        PathBuf::from(path)
-    } else {
-        home_dir()?.join(".pony-expres/daemon/token")
-    };
-    return read_token_file(&path);
+fn resolve_token_path(configured: Option<&str>) -> Result<PathBuf> {
+    if let Some(path) = configured.filter(|value| !value.trim().is_empty()) {
+        return expand_home(Path::new(path));
+    }
+    return Ok(home_dir()?.join(".pony-expres/daemon/token"));
+}
+
+fn expand_home(path: &Path) -> Result<PathBuf> {
+    let text = path.to_string_lossy();
+    if text == "~" || text.starts_with("~/") {
+        let suffix = text.trim_start_matches('~').trim_start_matches('/');
+        return Ok(home_dir()?.join(suffix));
+    }
+    return Ok(path.to_path_buf());
 }
 
 fn home_dir() -> Result<PathBuf> {
@@ -278,6 +295,15 @@ mod tests {
         assert!(validate_identifier("deployment", "generation.v1").is_ok());
         assert!(validate_identifier("tenant", "..").is_err());
         assert!(validate_identifier("tenant", "tenant/child").is_err());
+    }
+
+    #[test]
+    fn token_path_expands_home() {
+        let home = home_dir();
+        if let Ok(home) = home {
+            let expanded = resolve_token_path(Some("~/.pony-expres/daemon/token"));
+            assert_eq!(expanded.ok(), Some(home.join(".pony-expres/daemon/token")));
+        }
     }
 
     #[cfg(unix)]
