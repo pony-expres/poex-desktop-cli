@@ -31,6 +31,9 @@ jobs:
         with:
           toolchain: "1.90.0"
           components: rustfmt, clippy
+      - name: Materialize Zed dependencies
+        shell: bash
+        run: bash scripts/install-zed-deps.sh
       - name: Prepare dependency lock for audit
         shell: bash
         run: |
