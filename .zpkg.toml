@@ -1,0 +1,32 @@
+[package]
+org = "pony-expres"
+name = "poex-desktop-cli"
+version = "0.1.0"
+description = "Rust desktop control client for Pony Expres"
+license = "MIT"
+language = "rust"
+keywords = ["cli", "desktop", "pony", "rust", "global-tool"]
+
+[package.repository]
+vcs = "git"
+url = "https://github.com/pony-expres/poex-desktop-cli"
+
+[build]
+command = "cargo build --release --locked --bin poex-desktop-cli"
+outputs = ["target/release/poex-desktop-cli"]
+
+[bin]
+poex-desktop-cli = "target/release/poex-desktop-cli"
+
+[install]
+adapter = "none"
+dir = ".vendor/.zed"
+
+[publish]
+include_readme = true
+tag_format = "v{version}"
+smoke_test = "test -x \"$ZED_PKG_TEST_TARGET/target/release/poex-desktop-cli\" && \"$ZED_PKG_TEST_TARGET/target/release/poex-desktop-cli\" --help >/dev/null"
+exclude = [".env", ".env.*", ".direnv/**", ".zed/**", ".zed-pack/**", ".vendor/.zed/**", "target/**", "tmp/**", "**/*.log", ".DS_Store"]
+
+[scripts]
+test = "cargo test --all-targets --locked"
