@@ -38,6 +38,9 @@ type = "json"
 default = "{}"
 help = "JSON invocation payload."
 
+[commands.self-update]
+help = "Update poex-desktop-cli through the shared ORES self-update path."
+
 [flags.url]
 env = "POEX_DESKTOP_DAEMON_URL"
 aliases = ["url"]
